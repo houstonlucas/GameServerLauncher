@@ -3,8 +3,8 @@ import json
 import logging
 import os
 import time
-from datetime import datetime
-from dateutil import tz
+
+from ServerMonitor.utils import get_now_str, Timer
 
 
 class GameMonitor(ABC):
@@ -78,6 +78,12 @@ class EC2ServerMonitor:
         try:
             if self.game_monitor.server_running:
                 self.game_monitor.shutdown_game_server()
+                shutdown_timer = Timer(self.config["shutdown_wait_time"])
+                while self.game_monitor.server_running and not shutdown_timer.expired:
+                    time.sleep(self.config["heartbeat"])
+
+                if self.game_monitor.server_running:
+                    self.logger.error("Minecraft server did not shutdown properly!")
         except Exception as e:
             self.logger.error(f"Error shutting down game server: {e}")
         now_str = get_now_str()
@@ -85,39 +91,3 @@ class EC2ServerMonitor:
         # Shutdown the EC2 Instance after one minute
         os.system("shutdown -h 1")
 
-
-class Timer:
-    def __init__(self, max_time):
-        self.start_time = None
-        self.max_time = max_time
-
-    @property
-    def expired(self):
-        if self.is_running:
-            return self.elapsed >= self.max_time
-        else:
-            return False
-
-    @property
-    def is_running(self):
-        return self.start_time is not None
-
-    @property
-    def elapsed(self):
-        if self.is_running:
-            return time.time() - self.start_time
-
-    def start(self):
-        self.start_time = time.time()
-
-    def reset(self):
-        self.start_time = None
-
-
-def get_now_str():
-    from_zone = tz.gettz("UTC")
-    to_zone = tz.gettz("America/Los_Angeles")
-    now_utc = datetime.utcnow().replace(tzinfo=from_zone)
-    now = now_utc.astimezone(to_zone)
-    now_str = now.strftime("%Y/%m/%d %H:%M:%S")
-    return now_str
