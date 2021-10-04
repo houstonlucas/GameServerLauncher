@@ -5,20 +5,19 @@ from dateutil import tz
 
 
 def create_tmux_session(session_name: str):
-    usr_cmd_tmux_create_session = 'runuser -l houston -c "tmux new-session -d -s {}"'
-    cmd = usr_cmd_tmux_create_session.format(session_name)
-    os.system(cmd)
+    tmux_create_session_cmd = f'tmux new-session -d -s {session_name}"'
+    os.system(tmux_create_session_cmd)
 
 
 def tmux_sendkeys(session_name: str, command: str):
     """
     Runs 'command' in the tmux session with name 'session_name'
     """
-    usr_cmd_tmux_send = 'runuser -l houston -c "tmux send-keys -t {} \'{}\'"'
+    tmux_send_cmd = 'tmux send-keys -t {} \'{}\''
     # Send command
-    os.system(usr_cmd_tmux_send.format(session_name, command))
+    os.system(tmux_send_cmd.format(session_name, command))
     # Send newline
-    os.system(usr_cmd_tmux_send.format(session_name, "C-m"))
+    os.system(tmux_send_cmd.format(session_name, "C-m"))
 
 
 class Timer:
