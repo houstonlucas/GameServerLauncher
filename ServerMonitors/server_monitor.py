@@ -68,14 +68,18 @@ class EC2ServerMonitor:
                     if self.down_timer.expired:
                         self.should_shutdown = True
                         self.shutdown_ec2_instance("Game server seems to have crashed.")
+            else:
+                self.down_timer.reset()
             # If server is empty
-            elif self.game_monitor.server_empty:
+            if self.game_monitor.server_empty:
                 if not self.empty_timer.is_running:
                     self.empty_timer.start()
                 else:
                     if self.empty_timer.expired:
                         self.should_shutdown = True
                         self.shutdown_ec2_instance("Game server is empty.")
+            else:
+                self.empty_timer.reset()
 
             time.sleep(self.config["heartbeat"])
 
