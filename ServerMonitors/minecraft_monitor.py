@@ -36,7 +36,7 @@ class MinecraftMonitor(GameMonitor):
     @property
     def server_running(self):
         # See if there is a listener on the port
-        val = os.popen(f'lsof -iTCP:{self.port}').read()
+        val = os.popen(f'lsof -iTCP:{self.port} -sTCP:LISTEN').read()
         return bool(val)
 
 
