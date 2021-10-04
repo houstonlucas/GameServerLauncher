@@ -1,0 +1,1 @@
+python3 ServerMonitors/factorio_monitor.py
