@@ -39,9 +39,11 @@ class EC2ServerMonitor:
         self.empty_timer = Timer(self.config["max_empty_time"])
         self.down_timer = Timer(self.config["max_downtime"])
         self.logger = logging.getLogger("EC2Monitor")
+        self.logger.setLevel(logging.DEBUG)
 
     def monitor_game(self):
         # Start game server
+        self.logger.debug("Attempting to start game server.")
         self.game_monitor.start_game_server()
 
         # Wait for game server to start
@@ -55,7 +57,7 @@ class EC2ServerMonitor:
             time.sleep(self.config["heartbeat"])
 
         self.down_timer.reset()
-        self.logger.info("Game server started.")
+        self.logger.debug("Game server started.")
 
         # Monitor for extended empty server
         while not self.should_shutdown:
@@ -64,6 +66,7 @@ class EC2ServerMonitor:
                 # Evaluated if server has been down long enough to shutdown
                 if not self.down_timer.is_running:
                     self.down_timer.start()
+                    self.logger.warning(f"Down server detected: {get_now_str()}")
                 else:
                     if self.down_timer.expired:
                         self.should_shutdown = True
@@ -74,6 +77,7 @@ class EC2ServerMonitor:
             if self.game_monitor.server_empty:
                 if not self.empty_timer.is_running:
                     self.empty_timer.start()
+                    self.logger.warning(f"Empty server detected: {get_now_str()}")
                 else:
                     if self.empty_timer.expired:
                         self.should_shutdown = True
@@ -92,12 +96,12 @@ class EC2ServerMonitor:
                     time.sleep(self.config["heartbeat"])
 
                 if self.game_monitor.server_running:
-                    self.logger.error("Minecraft server did not shutdown properly!")
+                    self.logger.error("Game server did not shutdown properly!")
         except Exception as e:
             self.logger.error(f"Error shutting down game server: {e}")
 
         now_str = get_now_str()
-        self.logger.info(f"{now_str}: Shutting down EC2 instance because: {reason}")
+        self.logger.error(f"{now_str}: Shutting down EC2 instance because: {reason}")
 
         # Shutdown the EC2 Instance after one minute
         if self.game_monitor.debug_mode:
