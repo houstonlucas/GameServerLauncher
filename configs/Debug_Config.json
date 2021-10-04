@@ -1,0 +1,6 @@
+{
+    "heartbeat": 5,
+    "max_empty_time": 20,
+    "max_downtime": 20,
+    "shutdown_wait_time": 20
+}
