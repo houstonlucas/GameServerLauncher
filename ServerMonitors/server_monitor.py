@@ -4,12 +4,12 @@ import logging
 import os
 import time
 
-from ServerMonitor.utils import get_now_str, Timer
+from ServerMonitors.utils import get_now_str, Timer
 
 
 class GameMonitor(ABC):
-    def __init__(self):
-        pass
+    def __init__(self, debug_mode):
+        self.debug_mode = debug_mode
 
     @abstractmethod
     def start_game_server(self):
@@ -49,8 +49,11 @@ class EC2ServerMonitor:
         while not self.game_monitor.server_running:
             # Shut off EC2 instance if server doesn't start.
             if self.down_timer.expired:
+                self.should_shutdown = True
                 self.shutdown_ec2_instance("Game server failed to start.")
+
             time.sleep(self.config["heartbeat"])
+
         self.down_timer.reset()
         self.logger.info("Game server started.")
 
@@ -63,6 +66,7 @@ class EC2ServerMonitor:
                     self.down_timer.start()
                 else:
                     if self.down_timer.expired:
+                        self.should_shutdown = True
                         self.shutdown_ec2_instance("Game server seems to have crashed.")
             # If server is empty
             elif self.game_monitor.server_empty:
@@ -70,6 +74,7 @@ class EC2ServerMonitor:
                     self.empty_timer.start()
                 else:
                     if self.empty_timer.expired:
+                        self.should_shutdown = True
                         self.shutdown_ec2_instance("Game server is empty.")
 
             time.sleep(self.config["heartbeat"])
@@ -86,8 +91,14 @@ class EC2ServerMonitor:
                     self.logger.error("Minecraft server did not shutdown properly!")
         except Exception as e:
             self.logger.error(f"Error shutting down game server: {e}")
+
         now_str = get_now_str()
         self.logger.info(f"{now_str}: Shutting down EC2 instance because: {reason}")
+
         # Shutdown the EC2 Instance after one minute
-        os.system("shutdown -h 1")
+        if self.game_monitor.debug_mode:
+            print("Server would shutdown here.")
+            exit()
+        else:
+            os.system("shutdown -h 1")
 
