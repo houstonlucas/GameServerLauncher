@@ -4,12 +4,13 @@ import logging
 import pathlib
 
 import sys
+import time
 from pathlib import Path
 
 sys.path.append(".")
 
 from ServerMonitors.server_monitor import GameMonitor, EC2ServerMonitor
-from ServerMonitors.utils import tmux_sendkeys, create_tmux_session
+from ServerMonitors.utils import tmux_sendkeys
 
 
 class FactorioMonitor(GameMonitor):
@@ -18,13 +19,13 @@ class FactorioMonitor(GameMonitor):
         self.save_file = save_file
         self.tmux_log = "tmux_factorio.log"
         assert (pathlib.Path(self.save_file).exists())
-        self.port = 46544
+        self.port = 34197
         self.tmux_session_name = "factorio"
         self.logger = logging.getLogger("MinecraftMonitor")
 
     def start_game_server(self):
-        start_server_cmd = f"bin/x64/factorio --start-server {self.save_file}"
-        os.system(f"tmux new-session -s {self.tmux_session_name} -d '{start_server_cmd} |& tee {self.tmux_log}'")
+        start_server_cmd = f"factorio/bin/x64/factorio --start-server {self.save_file}"
+        os.system(f'tmux new-session -s {self.tmux_session_name} -d "{start_server_cmd} |& tee {self.tmux_log}"')
 
     def shutdown_game_server(self):
         # Issue commands to the tmux session
@@ -35,6 +36,8 @@ class FactorioMonitor(GameMonitor):
         # The number of lines back in the log to use to evaluate the number of players online
         num_lines = 10
         tmux_sendkeys(self.tmux_session_name, "/p o")
+        # Small sleep to allow response
+        time.sleep(0.1)
         lines = os.popen(f'tail -n {num_lines} {self.tmux_log}').read().split("\n")
         regex_search = r"Online players \((\d+)\)"
         for line in lines[::-1]:
@@ -42,6 +45,7 @@ class FactorioMonitor(GameMonitor):
             if player_count_search:
                 player_count = player_count_search.group(1)
                 return player_count == '0'
+        return True
 
     @property
     def server_running(self):
@@ -52,7 +56,7 @@ class FactorioMonitor(GameMonitor):
 
 if __name__ == '__main__':
     debug = True
-    factorio_monitor = FactorioMonitor("", debug)
+    factorio_monitor = FactorioMonitor("factorio/saves/my-save.zip", debug)
     config_path = Path("configs/EC2_Monitor_Config.json").absolute()
     print(config_path)
     ec2_monitor = EC2ServerMonitor(factorio_monitor, config_path)
