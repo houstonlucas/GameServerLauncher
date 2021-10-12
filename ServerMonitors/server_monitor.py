@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 import json
 import logging
 import os
+import socket
 import time
 
 from ServerMonitors.utils import get_now_str, Timer
@@ -38,12 +39,19 @@ class EC2ServerMonitor:
     def __init__(self, game_monitor: GameMonitor, config_file: str):
         with open(config_file) as f:
             self.config = json.load(f)
-        self.game_monitor = game_monitor
+
+        self.logger = logging.getLogger("EC2Monitor")
+        self.logger.setLevel(logging.DEBUG)
+
         self.should_shutdown = False
         self.empty_timer = Timer(self.config["max_empty_time"])
         self.down_timer = Timer(self.config["max_downtime"])
-        self.logger = logging.getLogger("EC2Monitor")
-        self.logger.setLevel(logging.DEBUG)
+
+        self.game_monitor = game_monitor
+
+        self.command_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        # TODO: Setup thread to wait for incoming commands
+        self.command_client, self.client_port = self.establish_command_socket()
 
     def monitor_game(self):
         self.start_game_server()
@@ -121,3 +129,12 @@ class EC2ServerMonitor:
                     self.shutdown_ec2_instance("Game server is empty.")
         else:
             self.empty_timer.reset()
+
+    def establish_command_socket(self):
+        try:
+            self.command_socket.bind(("", self.config["command_port"]))
+            self.command_socket.listen(1)
+            return self.command_socket.accept()
+        except Exception as e:
+            self.logger.error(e)
+            self.should_shutdown = True
