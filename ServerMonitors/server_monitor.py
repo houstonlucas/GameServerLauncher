@@ -12,6 +12,10 @@ class GameMonitor(ABC):
         self.debug_mode = debug_mode
 
     @abstractmethod
+    def parse_command(self, command: str):
+        raise NotImplementedError
+
+    @abstractmethod
     def start_game_server(self):
         raise NotImplementedError
 
@@ -42,48 +46,11 @@ class EC2ServerMonitor:
         self.logger.setLevel(logging.DEBUG)
 
     def monitor_game(self):
-        # Start game server
-        self.logger.debug("Attempting to start game server.")
-        self.game_monitor.start_game_server()
-
-        # Wait for game server to start
-        self.down_timer.start()
-        while not self.game_monitor.server_running:
-            # Shut off EC2 instance if server doesn't start.
-            if self.down_timer.expired:
-                self.should_shutdown = True
-                self.shutdown_ec2_instance("Game server failed to start.")
-
-            time.sleep(self.config["heartbeat"])
-
-        self.down_timer.reset()
-        self.logger.debug("Game server started.")
-
-        # Monitor for extended empty server
+        self.start_game_server()
+        # Monitor for shutdown conditions
         while not self.should_shutdown:
-            # If server isn't running
-            if not self.game_monitor.server_running:
-                # Evaluated if server has been down long enough to shutdown
-                if not self.down_timer.is_running:
-                    self.down_timer.start()
-                    self.logger.warning(f"Down server detected: {get_now_str()}")
-                else:
-                    if self.down_timer.expired:
-                        self.should_shutdown = True
-                        self.shutdown_ec2_instance("Game server seems to have crashed.")
-            else:
-                self.down_timer.reset()
-            # If server is empty
-            if self.game_monitor.server_empty:
-                if not self.empty_timer.is_running:
-                    self.empty_timer.start()
-                    self.logger.warning(f"Empty server detected: {get_now_str()}")
-                else:
-                    if self.empty_timer.expired:
-                        self.should_shutdown = True
-                        self.shutdown_ec2_instance("Game server is empty.")
-            else:
-                self.empty_timer.reset()
+            self.check_for_crashed_server()
+            self.check_for_empty_server()
 
             time.sleep(self.config["heartbeat"])
 
@@ -110,3 +77,47 @@ class EC2ServerMonitor:
         else:
             os.system("shutdown -h 1")
 
+    def start_game_server(self):
+        # Start game server
+        self.logger.debug("Attempting to start game server.")
+        self.game_monitor.start_game_server()
+
+        # Wait for game server to start
+        self.down_timer.start()
+        while not self.game_monitor.server_running:
+            # Shut off EC2 instance if server doesn't start.
+            if self.down_timer.expired:
+                self.should_shutdown = True
+                self.shutdown_ec2_instance("Game server failed to start.")
+
+            time.sleep(self.config["heartbeat"])
+
+        self.down_timer.reset()
+        self.logger.debug("Game server started.")
+
+    def check_for_crashed_server(self):
+        # If server isn't running
+        if not self.game_monitor.server_running:
+            # Evaluated if server has been down long enough to shutdown
+            if not self.down_timer.is_running:
+                self.down_timer.start()
+                self.logger.warning(f"Down server detected: {get_now_str()}")
+            else:
+                if self.down_timer.expired:
+                    self.should_shutdown = True
+                    self.shutdown_ec2_instance("Game server seems to have crashed.")
+        else:
+            self.down_timer.reset()
+
+    def check_for_empty_server(self):
+        # If server is empty
+        if self.game_monitor.server_empty:
+            if not self.empty_timer.is_running:
+                self.empty_timer.start()
+                self.logger.warning(f"Empty server detected: {get_now_str()}")
+            else:
+                if self.empty_timer.expired:
+                    self.should_shutdown = True
+                    self.shutdown_ec2_instance("Game server is empty.")
+        else:
+            self.empty_timer.reset()
