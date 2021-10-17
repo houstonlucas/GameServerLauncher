@@ -31,6 +31,11 @@ class FactorioMonitor(GameMonitor):
         # Issue commands to the tmux session
         tmux_sendkeys(self.tmux_session_name, "/quit")
 
+    def parse_command(self, data: bytes):
+        # TODO: actually parse command. This is for testing.
+        print(data)
+        return data
+
     @property
     def server_empty(self):
         # The number of lines back in the log to use to evaluate the number of players online
@@ -58,6 +63,5 @@ if __name__ == '__main__':
     debug = True
     factorio_monitor = FactorioMonitor("factorio/saves/my-save.zip", debug)
     config_path = Path("configs/EC2_Monitor_Config.json").absolute()
-    print(config_path)
     ec2_monitor = EC2ServerMonitor(factorio_monitor, config_path)
-    ec2_monitor.monitor_game()
+    ec2_monitor.run()
