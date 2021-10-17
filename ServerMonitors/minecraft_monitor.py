@@ -44,6 +44,5 @@ if __name__ == '__main__':
     debug = True
     minecraft_monitor = MinecraftMonitor(debug)
     config_path = Path("configs/EC2_Monitor_Config.json").absolute()
-    print(config_path)
     ec2_monitor = EC2ServerMonitor(minecraft_monitor, config_path)
-    ec2_monitor.monitor_game()
+    ec2_monitor.run()
