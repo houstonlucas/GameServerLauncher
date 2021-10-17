@@ -1,9 +1,12 @@
+import threading
 from abc import ABC, abstractmethod
 import json
 import logging
 import os
-import socket
 import time
+
+from twisted.internet import protocol, reactor, task
+from typing import Type
 
 from ServerMonitors.utils import get_now_str, Timer
 
@@ -13,7 +16,7 @@ class GameMonitor(ABC):
         self.debug_mode = debug_mode
 
     @abstractmethod
-    def parse_command(self, command: str):
+    def parse_command(self, command: bytes):
         raise NotImplementedError
 
     @abstractmethod
@@ -41,7 +44,8 @@ class EC2ServerMonitor:
             self.config = json.load(f)
 
         self.logger = logging.getLogger("EC2Monitor")
-        self.logger.setLevel(logging.DEBUG)
+        logging_level = logging.getLevelName(self.config["loggingLevel"])
+        self.logger.setLevel(logging_level)
 
         self.should_shutdown = False
         self.empty_timer = Timer(self.config["max_empty_time"])
@@ -49,9 +53,14 @@ class EC2ServerMonitor:
 
         self.game_monitor = game_monitor
 
-        self.command_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        # TODO: Setup thread to wait for incoming commands
-        self.command_client, self.client_port = self.establish_command_socket()
+        self.monitoring_thread = threading.Thread(target=self.monitor_game)
+
+    def run(self):
+        self.monitoring_thread.start()
+        factory = protocol.ServerFactory()
+        factory.protocol = make_pass_through_protocol(self)
+        reactor.listenTCP(self.config['port'], factory)
+        reactor.run()
 
     def monitor_game(self):
         self.start_game_server()
@@ -63,6 +72,7 @@ class EC2ServerMonitor:
             time.sleep(self.config["heartbeat"])
 
     def shutdown_ec2_instance(self, reason):
+        self.should_shutdown = True
         try:
             if self.game_monitor.server_running:
                 self.game_monitor.shutdown_game_server()
@@ -81,7 +91,6 @@ class EC2ServerMonitor:
         # Shutdown the EC2 Instance after one minute
         if self.game_monitor.debug_mode:
             print("Server would shutdown here.")
-            exit()
         else:
             os.system("shutdown -h 1")
 
@@ -130,11 +139,19 @@ class EC2ServerMonitor:
         else:
             self.empty_timer.reset()
 
-    def establish_command_socket(self):
-        try:
-            self.command_socket.bind(("", self.config["command_port"]))
-            self.command_socket.listen(1)
-            return self.command_socket.accept()
-        except Exception as e:
-            self.logger.error(e)
-            self.should_shutdown = True
+    def handle_message(self, data: bytes) -> bytes:
+        response = self.game_monitor.parse_command(data)
+        return response
+
+
+def make_pass_through_protocol(server_monitor: EC2ServerMonitor) -> Type[protocol.Protocol]:
+    class PassThrough(protocol.Protocol):
+        def dataReceived(self, data: bytes):
+            try:
+                response = server_monitor.handle_message(data)
+                self.transport.write(response)
+            except Exception as e:
+                server_monitor.logger.error(f"Error Proccessing command: {e}")
+                self.transport.write(b"There was an error processing the command.")
+
+    return PassThrough
