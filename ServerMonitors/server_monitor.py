@@ -157,7 +157,7 @@ def make_pass_through_protocol(server_monitor: EC2ServerMonitor) -> Type[protoco
                 response = server_monitor.handle_message(data)
                 self.transport.write(response)
             except Exception as e:
-                server_monitor.logger.error(f"Error Proccessing command: {e}")
+                server_monitor.logger.error(f"Error Processing command: {e}")
                 self.transport.write(b"There was an error processing the command.")
 
     return PassThrough
