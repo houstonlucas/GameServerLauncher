@@ -52,24 +52,30 @@ class EC2ServerMonitor:
         self.down_timer = Timer(self.config["max_downtime"])
 
         self.game_monitor = game_monitor
-
-        self.monitoring_thread = threading.Thread(target=self.monitor_game)
+        self.monitor_loop_call = task.LoopingCall(self.monitor_once)
+        self.monitor_loop_call.start(self.config['heartbeat'])
 
     def run(self):
-        self.monitoring_thread.start()
+        self.start_game_server()
+
+        # Don't start if game server failed to start.
+        if self.should_shutdown:
+            return
+
         factory = protocol.ServerFactory()
         factory.protocol = make_pass_through_protocol(self)
         reactor.listenTCP(self.config['port'], factory)
         reactor.run()
 
-    def monitor_game(self):
-        self.start_game_server()
-        # Monitor for shutdown conditions
-        while not self.should_shutdown:
-            self.check_for_crashed_server()
-            self.check_for_empty_server()
-
-            time.sleep(self.config["heartbeat"])
+    def monitor_once(self):
+        print("In monitor once")
+        self.check_for_crashed_server()
+        self.check_for_empty_server()
+        if self.should_shutdown:
+            try:
+                reactor.stop()
+            except Exception as e:
+                self.logger.error(f"Error stopping reactor: {e}")
 
     def shutdown_ec2_instance(self, reason):
         self.should_shutdown = True
