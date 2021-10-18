@@ -24,8 +24,9 @@ class FactorioMonitor(GameMonitor):
         self.logger = logging.getLogger("MinecraftMonitor")
 
     def start_game_server(self):
-        start_server_cmd = f"factorio/bin/x64/factorio --start-server {self.save_file}"
-        os.system(f'tmux new-session -s {self.tmux_session_name} -d "{start_server_cmd} |& tee {self.tmux_log}"')
+        start_server_cmd = f"/home/ubuntu/factorio/bin/x64/factorio --start-server {self.save_file}"
+        os.system(f'tmux new-session -s {self.tmux_session_name} -d')
+        tmux_sendkeys(self.tmux_session_name, f"{start_server_cmd} |& tee {self.tmux_log}")
 
     def shutdown_game_server(self):
         # Issue commands to the tmux session
@@ -61,7 +62,7 @@ class FactorioMonitor(GameMonitor):
 
 if __name__ == '__main__':
     debug = True
-    factorio_monitor = FactorioMonitor("factorio/saves/my-save.zip", debug)
+    factorio_monitor = FactorioMonitor("/home/ubuntu/factorio/saves/my-save.zip", debug)
     config_path = Path("configs/EC2_Monitor_Config.json").absolute()
     ec2_monitor = EC2ServerMonitor(factorio_monitor, config_path)
     ec2_monitor.run()
