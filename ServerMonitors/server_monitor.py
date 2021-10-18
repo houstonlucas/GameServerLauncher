@@ -68,7 +68,6 @@ class EC2ServerMonitor:
         reactor.run()
 
     def monitor_once(self):
-        print("In monitor once")
         self.check_for_crashed_server()
         self.check_for_empty_server()
         if self.should_shutdown:
