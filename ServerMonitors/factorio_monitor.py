@@ -26,7 +26,7 @@ class FactorioMonitor(GameMonitor):
     def start_game_server(self):
         start_server_cmd = f"/home/ubuntu/factorio/bin/x64/factorio --start-server {self.save_file}"
         os.system(f'tmux new-session -s {self.tmux_session_name} -d')
-        tmux_sendkeys(self.tmux_session_name, f"{start_server_cmd} |& tee {self.tmux_log}")
+        tmux_sendkeys(self.tmux_session_name, f"{start_server_cmd} 2>&1 | tee {self.tmux_log}")
 
     def shutdown_game_server(self):
         # Issue commands to the tmux session
