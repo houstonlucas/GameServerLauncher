@@ -5,7 +5,6 @@ import logging
 import os
 import time
 
-from twisted.internet import protocol, reactor, task
 from typing import Type
 
 from ServerMonitors.utils import get_now_str, Timer
@@ -16,7 +15,7 @@ class GameMonitor(ABC):
         self.debug_mode = debug_mode
 
     @abstractmethod
-    def parse_command(self, command: bytes):
+    def parse_command(self, command: str):
         raise NotImplementedError
 
     @abstractmethod
@@ -52,8 +51,6 @@ class EC2ServerMonitor:
         self.down_timer = Timer(self.config["max_downtime"])
 
         self.game_monitor = game_monitor
-        self.monitor_loop_call = task.LoopingCall(self.monitor_once)
-        self.monitor_loop_call.start(self.config['heartbeat'])
 
     def run(self):
         self.start_game_server()
@@ -62,20 +59,17 @@ class EC2ServerMonitor:
         if self.should_shutdown:
             return
 
-        factory = protocol.ServerFactory()
-        factory.protocol = make_pass_through_protocol(self)
-        reactor.listenTCP(self.config['port'], factory)
-        reactor.run()
+        self.monitor_game()
 
-    def monitor_once(self):
-        print("In monitor once")
-        self.check_for_crashed_server()
-        self.check_for_empty_server()
-        if self.should_shutdown:
-            try:
-                reactor.stop()
-            except Exception as e:
-                self.logger.error(f"Error stopping reactor: {e}")
+    def monitor_game(self):
+        self.start_game_server()
+        # Monitor for shutdown conditions
+        while not self.should_shutdown:
+            self.check_for_crashed_server()
+            self.check_for_empty_server()
+            self.check_for_incoming_message()
+
+            time.sleep(self.config["heartbeat"])
 
     def shutdown_ec2_instance(self, reason):
         self.should_shutdown = True
@@ -145,19 +139,30 @@ class EC2ServerMonitor:
         else:
             self.empty_timer.reset()
 
-    def handle_message(self, data: bytes) -> bytes:
+    def check_for_incoming_message(self):
+        # Incoming messages are stored in a json file.
+        if os.path.exists(self.config['request_path']):
+            self.logger.info("Request received")
+            with open(self.config['request_path']) as request_file:
+                json_request = json.load(request_file)
+
+            # Delete message to not parse it multiple times
+            os.remove(self.config['request_path'])
+
+            response = self.handle_request(json_request['message'])
+            json_response = {'message': response}
+            with open(self.config['response_path']) as response_file:
+                json.dump(json_response, response_file)
+
+            # Wait a while for confirmation that response was received
+            confirm_timer = Timer(self.config['command_timeout'])
+            confirm_timer.start()
+            while not confirm_timer.expired:
+                if os.path.exists(self.config['confirmation_path']):
+                    # Confirmation received
+                    os.remove(self.config['response_path'])
+                    os.remove(self.config['confirmation_path'])
+
+    def handle_request(self, data: str) -> str:
         response = self.game_monitor.parse_command(data)
         return response
-
-
-def make_pass_through_protocol(server_monitor: EC2ServerMonitor) -> Type[protocol.Protocol]:
-    class PassThrough(protocol.Protocol):
-        def dataReceived(self, data: bytes):
-            try:
-                response = server_monitor.handle_message(data)
-                self.transport.write(response)
-            except Exception as e:
-                server_monitor.logger.error(f"Error Processing command: {e}")
-                self.transport.write(b"There was an error processing the command.")
-
-    return PassThrough
