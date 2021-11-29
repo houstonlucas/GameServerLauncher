@@ -7,7 +7,8 @@ import time
 
 from typing import Type
 
-from src.utils import get_now_str, Timer
+from src.constants import REQUEST_PATH, RESPONSE_PATH, CONFIRM_PATH
+from src.utils import get_now_str, Timer, json_from_file, json_to_file
 
 
 class GameMonitor(ABC):
@@ -38,6 +39,7 @@ class GameMonitor(ABC):
 
 
 class EC2ServerMonitor:
+
     def __init__(self, game_monitor: GameMonitor, config_file: str):
         with open(config_file) as f:
             self.config = json.load(f)
@@ -140,31 +142,32 @@ class EC2ServerMonitor:
             self.empty_timer.reset()
 
     def check_for_incoming_message(self):
-        # Incoming messages are stored in a json file.
-        if os.path.exists(self.config['request_path']):
-            with open(self.config['request_path']) as request_file:
-                json_request = json.load(request_file)
+        # Poll for incoming messages stored in the request json file
+        if os.path.exists(REQUEST_PATH):
+            # Read and immediately delete the request
+            json_request = json_from_file(REQUEST_PATH)
+            os.remove(REQUEST_PATH)
 
-            # Delete message to not parse it multiple times
-            os.remove(self.config['request_path'])
-
+            # Create and store response in the response json file
             response = self.handle_request(json_request['message'])
             json_response = {'message': response}
-            with open(self.config['response_path']) as response_file:
-                json.dump(json_response, response_file)
+            json_to_file(json_response, RESPONSE_PATH)
 
-            # Wait a while for confirmation that response was received
+            # Poll for confirmation that response was received
             confirm_timer = Timer(self.config['command_timeout'])
             confirm_timer.start()
+            confirmation = False
             while not confirm_timer.expired:
-                if os.path.exists(self.config['confirmation_path']):
+                if os.path.exists(CONFIRM_PATH):
                     # Confirmation received
-                    os.remove(self.config['response_path'])
-                    os.remove(self.config['confirmation_path'])
-                    confirm_timer.reset()
+                    confirmation = True
 
-            if confirm_timer.is_running:
+            if not confirmation:
                 self.logger.warning('No confirmation received')
+
+            # Clean out the files
+            os.remove(RESPONSE_PATH)
+            os.remove(CONFIRM_PATH)
 
     def handle_request(self, data: str) -> str:
         response = self.game_monitor.parse_command(data)
