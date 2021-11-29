@@ -7,7 +7,7 @@ import time
 
 from typing import Type
 
-from ServerMonitors.utils import get_now_str, Timer
+from src.utils import get_now_str, Timer
 
 
 class GameMonitor(ABC):

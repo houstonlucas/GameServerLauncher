@@ -9,15 +9,15 @@ from pathlib import Path
 
 sys.path.append(".")
 
-from ServerMonitors.server_monitor import GameMonitor, EC2ServerMonitor
-from ServerMonitors.utils import tmux_sendkeys
+from src.server_monitor import GameMonitor, EC2ServerMonitor
+from src.utils import tmux_sendkeys
 
 
 class FactorioMonitor(GameMonitor):
     def __init__(self, save_file: str, debug_mode: bool = False):
         super().__init__(debug_mode)
         self.save_file = save_file
-        self.tmux_log = "tmux_factorio.log"
+        self.tmux_log = "../logs/tmux_factorio.log"
         assert (pathlib.Path(self.save_file).exists())
         self.port = 34197
         self.tmux_session_name = "factorio"

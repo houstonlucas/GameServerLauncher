@@ -6,8 +6,8 @@ from pathlib import Path
 
 sys.path.append(".")
 
-from ServerMonitors.server_monitor import GameMonitor, EC2ServerMonitor
-from ServerMonitors.utils import tmux_sendkeys, create_tmux_session
+from src.server_monitor import GameMonitor, EC2ServerMonitor
+from src.utils import tmux_sendkeys, create_tmux_session
 
 
 class MinecraftMonitor(GameMonitor):
