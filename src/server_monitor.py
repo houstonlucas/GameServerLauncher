@@ -142,7 +142,6 @@ class EC2ServerMonitor:
     def check_for_incoming_message(self):
         # Incoming messages are stored in a json file.
         if os.path.exists(self.config['request_path']):
-            self.logger.info("Request received")
             with open(self.config['request_path']) as request_file:
                 json_request = json.load(request_file)
 
@@ -162,6 +161,10 @@ class EC2ServerMonitor:
                     # Confirmation received
                     os.remove(self.config['response_path'])
                     os.remove(self.config['confirmation_path'])
+                    confirm_timer.reset()
+
+            if confirm_timer.is_running:
+                self.logger.warning('No confirmation received')
 
     def handle_request(self, data: str) -> str:
         response = self.game_monitor.parse_command(data)
