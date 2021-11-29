@@ -63,6 +63,6 @@ class FactorioMonitor(GameMonitor):
 if __name__ == '__main__':
     debug = True
     factorio_monitor = FactorioMonitor("/home/ubuntu/factorio/saves/my-save.zip", debug)
-    config_path = Path("configs/EC2_Monitor_Config.json").absolute()
+    config_path = Path("Configs/EC2_Monitor_Config.json").absolute()
     ec2_monitor = EC2ServerMonitor(factorio_monitor, config_path)
     ec2_monitor.run()
