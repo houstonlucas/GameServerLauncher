@@ -1,3 +1,4 @@
+import json
 import os
 import time
 from datetime import datetime
@@ -55,3 +56,14 @@ def get_now_str():
     now = now_utc.astimezone(to_zone)
     now_str = now.strftime("%Y/%m/%d %H:%M:%S")
     return now_str
+
+
+def json_from_file(file_path: str, file_args='r'):
+    with open(file_path, file_args) as file:
+        json_object = json.load(file)
+    return json_object
+
+
+def json_to_file(json_obj, file_path: str, file_args='w+'):
+    with open(file_path, file_args) as file:
+        json.dump(json_obj, file)
