@@ -1,0 +1,12 @@
+[
+  {
+    "name": "minecraft",
+    "instance_id": "i-0123456789abcdef",
+    "pem_file": "~/secrets/minecraft.pem"
+  },
+  {
+    "name": "factorio",
+    "instance_id": "i-0123456789abcde0",
+    "pem_file": "~/secrets/factorio.pem"
+  }
+]

@@ -1,0 +1,5 @@
+{
+  "logger_name": "discord_bot",
+  "discord_channel_name": "game-server-bot",
+  "instance_map_file": "../Configs/DiscordBot/instance_map.json"
+}
