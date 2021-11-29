@@ -3,14 +3,14 @@ import os
 import sys
 import json
 import time
-from typing import Dict
+from typing import Dict, Union
 
 import discord
 import asyncio
 import boto3
 import click
 
-from src.constants import RESPONSE_PATH, REQUEST_PATH
+from src.constants import RESPONSE_PATH, REQUEST_PATH, CONFIRM_PATH
 from src.utils import Timer, json_to_file, json_from_file
 
 discord_client = discord.Client()
@@ -72,25 +72,31 @@ class DiscordBot:
             self.instance_map[instance_name] = entry
 
     '''
-    This function passes messages to the desired instance via 
+    This function passes messages to the desired instance.
+    The function returns a string response passed through from the server.
+    If there is a timeout waiting for a response the function returns None
     '''
-    def send_message_to_instance(self, instance, message):
+    def send_message_to_instance(self, instance_name, message) -> Union[str, None]:
         # This function takes
         # TODO: add usr_name & ip to config
-        usr_name = 'ubuntu'
-        ip = instance
+        usr_name = self.instance_map[instance_name]['user_name']
+        ip = self.instance_map[instance_name]['ip']
+        pem_file = self.instance_map[instance_name]['pem_path']
 
-        remote_request = f'{usr_name}@{ip}:{REQUEST_PATH}'
-        remote_response = f'{usr_name}@{ip}:{RESPONSE_PATH}'
-        pem_file = self.config['pem_path']
+        remote_base = f'{usr_name}@{ip}'
 
+        remote_request = f'{remote_base}:{REQUEST_PATH}'
+        remote_response = f'{remote_base}:{RESPONSE_PATH}'
+        remote_confirm = f'{remote_base}:{CONFIRM_PATH}'
+
+        # Send the message over with scp
         json_request = {'message': message}
         json_to_file(json_request, REQUEST_PATH)
-        os.popen(f"scp -i {pem_file}  {remote_request}")
+        os.popen(f"scp -i {pem_file}  {REQUEST_PATH} {remote_request}")
 
         # Wait for response
         json_response = None
-        response_timer = Timer(30)
+        response_timer = Timer(self.config['response_timeout'])
         while not response_timer.expired:
             os.popen(f"scp -i {pem_file} {remote_response} {RESPONSE_PATH}")
             if os.path.exists(RESPONSE_PATH):
@@ -99,11 +105,21 @@ class DiscordBot:
                 break
             time.sleep(1)
 
+        # Send a confirmation that the response was received
+        json_to_file({}, CONFIRM_PATH)
+        os.popen(f"scp -i {pem_file} {CONFIRM_PATH} {remote_confirm}")
+
         if json_response is not None:
             return json_response['message']
         else:
-            return "No response was received from instance."
-            # TODO: shutdown the instance out of caution.
+            self.logger.error("No response was received from instance.")
+            return None
+
+    def get_instance_name_from_words(self, message_words):
+        for instance_name in self.instance_map:
+            if instance_name in message_words:
+                return instance_name
+        return False
 
     @discord_client.event
     async def on_ready(self):
@@ -123,33 +139,61 @@ class DiscordBot:
             message.channel.name == self.discord_channel_name
         ]):
             print(message.content)
-            target_instance_name = message.content.split()[1]
+            message_words = message.content.split()
+            target_instance_name = self.get_instance_name_from_words(message_words)
+            if not target_instance_name:
+                self.logger.info('No instance name found in message')
+                return
 
             if target_instance_name in self.instance_map:
-                target_instance = self.instance_map[target_instance_name]
-                # TODO: refactor this section to:
-                #   - allow the GameMonitor has time to safely shutdown
-                #   - have a start up sequence
-                if 'stop' in message.content:
-                    if turnOffInstance(target_instance):
-                        await self.discord_channel.send("AWS Instance stopping")
-                    else:
-                        await self.discord_channel.send('Error stopping AWS Instance')
-                elif 'start' in message.content:
-                    if turnOnInstance(target_instance):
-                        await self.discord_channel.send('AWS Instance starting')
-                    else:
-                        await self.discord_channel.send('Error starting AWS Instance')
-                elif 'status' in message.content:
-                    await self.discord_channel.send('AWS Instance status is: ' + getInstanceState(target_instance))
-
-
-
+                if 'stop' in message_words:
+                    await self.stop_instance(target_instance_name, message)
+                elif 'start' in message_words:
+                    await self.start_instance(target_instance_name, message)
+                else:
+                    await self.handle_generic_message(target_instance_name, message)
             else:
-                await self.discord_channel.send(f"Could not find {target_instance_name}")
+                await self.discord_channel.send(f'Could not find instance with name: "{target_instance_name}"')
+
+    async def handle_generic_message(self, instance_name, message):
+        # Send message and receive response
+        response = self.send_message_to_instance(
+            instance_name,
+            message.content
+        )
+
+        # Display response in discord
+        await self.discord_channel.send(f'{instance_name} says: {response}')
+
+    async def start_instance(self, instance_name, message):
+        instance = self.instance_map[instance_name]['instance']
+
+        # Start the instance up
+        if turn_on_instance(instance):
+            await self.discord_channel.send('AWS Instance starting')
+        else:
+            await self.discord_channel.send('Error starting AWS Instance')
+
+        # TODO: Poll for instance start
+        time.sleep(15)
+
+        # Pass the instance the startup message and display response in discord
+        await self.handle_generic_message(instance_name, message)
+
+    async def stop_instance(self, instance_name, message):
+        instance = self.instance_map[instance_name]['instance']
+
+        # Tell the instance to prepare for shutdown and display response in discord
+        await self.handle_generic_message(instance_name, message)
+
+        # Turn instance off
+        if turn_off_instance(instance):
+            await self.discord_channel.send("AWS Instance stopping")
+        else:
+            await self.discord_channel.send('Error stopping AWS Instance')
 
 
-def turnOffInstance(instance):
+def turn_off_instance(instance):
     try:
         instance.stop(False, False)
         return True
@@ -158,7 +202,7 @@ def turnOffInstance(instance):
         return False
 
 
-def turnOnInstance(instance):
+def turn_on_instance(instance):
     try:
         instance.start()
         return True
@@ -167,7 +211,7 @@ def turnOnInstance(instance):
         return False
 
 
-def getInstanceState(instance):
+def get_instance_state(instance):
     return instance.state['Name']
 
 

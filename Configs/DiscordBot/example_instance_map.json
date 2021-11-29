@@ -2,12 +2,14 @@
   {
     "instance_name": "minecraft",
     "instance_id": "i-0123456789abcdef",
+    "instance_ip": "127.0.0.1",
     "user_name": "ec2",
     "pem_file": "~/secrets/minecraft.pem"
   },
   {
     "instance_name": "factorio",
     "instance_id": "i-0123456789abcde0",
+    "instance_ip": "127.0.0.2",
     "user_name": "ubuntu",
     "pem_file": "~/secrets/factorio.pem"
   }
