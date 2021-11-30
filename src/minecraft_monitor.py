@@ -11,12 +11,21 @@ from src.utils import tmux_sendkeys, create_tmux_session
 
 
 class MinecraftMonitor(GameMonitor):
+
     def __init__(self, debug_mode=False):
         super().__init__(debug_mode)
+        # TODO: add config
         self.debug_mode = debug_mode
         self.port = 25565
         self.tmux_session_name = "minecraft"
         self.logger = logging.getLogger("MinecraftMonitor")
+
+    def parse_command(self, command: str):
+        command_words = command.split()
+        if "echo" in command_words:
+            return command
+        else:
+            return 'Command not recognized.'
 
     def start_game_server(self):
         create_tmux_session(self.tmux_session_name)
