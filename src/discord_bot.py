@@ -41,7 +41,7 @@ class DiscordBot:
         #
         # TODO: pull region from environment variables
         aws_region = 'us-west-1'
-        self.ec2_client = boto3.client('ec2', region_name=aws_region)
+        self.ec2 = boto3.resource('ec2', region_name=aws_region)
         self.instance_map = {}
         self.load_instance_map()
 
@@ -68,7 +68,7 @@ class DiscordBot:
         for entry in instance_map_json:
             instance_name = entry['instance_name']
             instance_id = entry['instance_id']
-            entry["instance"] = self.ec2_client.Instance(instance_id)
+            entry["instance"] = self.ec2.Instance(instance_id)
             self.instance_map[instance_name] = entry
 
     '''
@@ -80,7 +80,7 @@ class DiscordBot:
         # This function takes
         # TODO: add usr_name & ip to config
         usr_name = self.instance_map[instance_name]['user_name']
-        ip = self.instance_map[instance_name]['ip']
+        ip = self.instance_map[instance_name]['instance'].public_ip_address
         pem_file = self.instance_map[instance_name]['pem_path']
 
         remote_base = f'{usr_name}@{ip}'
