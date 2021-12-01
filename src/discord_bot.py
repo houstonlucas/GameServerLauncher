@@ -6,6 +6,7 @@ import time
 from typing import Dict, Union
 
 import discord
+from discord.ext import commands
 import asyncio
 import boto3
 import click
@@ -13,28 +14,30 @@ import click
 from src.constants import RESPONSE_PATH, REQUEST_PATH, CONFIRM_PATH
 from src.utils import Timer, json_to_file, json_from_file
 
-discord_client = discord.Client()
-
 
 @click.command()
 @click.argument('config_file', type=click.Path(exists=True))
 def main(config_file: str):
-    discord_bot = DiscordBot(config_file, discord_client)
-    discord_bot.run()
+    discord_bot = DiscordBot(config_file)
+
+    discord_token = os.environ['AWSDISCORDTOKEN']
+    if discord_token:
+        discord_bot.run(discord_token)
+    else:
+        discord_bot.logger.error("Could not find discord token.")
+    discord_bot.run(discord_token)
 
 
-class DiscordBot:
+class DiscordBot(commands.Bot):
 
-    def __init__(self, config_file: str, discord_client_: discord.Client):
-        self.is_running = False
-
+    def __init__(self, config_file: str, **options):
         # Load configuration
+        super().__init__(command_prefix="", **options)
         self.config = json_from_file(config_file)
 
         self.logger = logging.getLogger(self.config['logger_name'])
 
         # Discord variables
-        self.discord_client = discord_client_
         self.discord_channel_name = self.config['discord_channel_name']
         self.discord_channel = None
 
@@ -44,14 +47,6 @@ class DiscordBot:
         self.ec2 = boto3.resource('ec2', region_name=aws_region)
         self.instance_map = {}
         self.load_instance_map()
-
-    def run(self):
-        self.is_running = True
-        discord_token = os.environ['AWSDISCORDTOKEN']
-        if discord_token:
-            self.discord_client.run(discord_token)
-        else:
-            self.logger.error("Could not find discord token.")
 
     def load_instance_map(self):
         instance_map_json = {}
@@ -116,32 +111,33 @@ class DiscordBot:
             return None
 
     def get_instance_name_from_words(self, message_words):
-        for instance_name in self.instance_map:
+        for instance_name in self.instance_map.keys():
             if instance_name in message_words:
                 return instance_name
         return False
 
-    @discord_client.event
     async def on_ready(self):
         print('Logged in as')
-        print(self.discord_client.user.name)
-        print(self.discord_client.user.id)
+        print(self.user.name)
+        print(self.user.id)
         print('------------')
         self.discord_channel = discord.utils.get(
-            self.discord_client.get_all_channels(),
+            self.get_all_channels(),
             name=self.discord_channel_name
         )
 
-    @discord_client.event
     async def on_message(self, message: discord.Message):
         if all([
-            self.discord_client.user.id in (member.id for member in message.mentions),
+            self.user.id in (member.id for member in message.mentions),
             message.channel.name == self.discord_channel_name
         ]):
             print(message.content)
             message_words = message.content.split()
             target_instance_name = self.get_instance_name_from_words(message_words)
             if not target_instance_name:
+                await self.discord_channel.send(
+                    f'No instance name detected. Available instances: {list(self.instance_map.keys())}'
+                )
                 self.logger.info('No instance name found in message')
                 return
 
