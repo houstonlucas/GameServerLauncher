@@ -166,8 +166,10 @@ class EC2ServerMonitor:
                 self.logger.warning('No confirmation received')
 
             # Clean out the files
-            os.remove(RESPONSE_PATH)
-            os.remove(CONFIRM_PATH)
+            if os.path.exists(RESPONSE_PATH):
+                os.remove(RESPONSE_PATH)
+            if os.path.exists(CONFIRM_PATH):
+                os.remove(CONFIRM_PATH)
 
     def handle_request(self, data: str) -> str:
         response = self.game_monitor.parse_command(data)

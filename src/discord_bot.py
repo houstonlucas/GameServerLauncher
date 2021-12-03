@@ -72,8 +72,7 @@ class DiscordBot(commands.Bot):
     If there is a timeout waiting for a response the function returns None
     '''
     def send_message_to_instance(self, instance_name, message) -> Union[str, None]:
-        # This function takes
-        # TODO: add usr_name & ip to config
+        # This function takes a message and passes it to the desired instance in a file via scp
         usr_name = self.instance_map[instance_name]['user_name']
         ip = self.instance_map[instance_name]['instance'].public_ip_address
         pem_file = self.instance_map[instance_name]['pem_path']
