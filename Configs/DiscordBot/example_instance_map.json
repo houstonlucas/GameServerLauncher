@@ -1,0 +1,14 @@
+[
+  {
+    "instance_name": "minecraft",
+    "instance_id": "i-0123456789abcdef",
+    "user_name": "ec2",
+    "pem_file": "~/secrets/minecraft.pem"
+  },
+  {
+    "instance_name": "factorio",
+    "instance_id": "i-0123456789abcde0",
+    "user_name": "ubuntu",
+    "pem_file": "~/secrets/factorio.pem"
+  }
+]

@@ -1,0 +1,12 @@
+{
+    "port": 25565,
+    "heartbeat": 10,
+    "max_empty_time": 900,
+    "max_downtime": 300,
+    "shutdown_wait_time": 300,
+    "loggingLevel": "DEBUG",
+    "command_timeout": 20,
+    "request_path": "/GameServerLauncher/msgs/request",
+    "response_path": "/GameServerLauncher/msgs/response",
+    "confirmation_path": "/GameServerLauncher/msgs/confirm"
+}
