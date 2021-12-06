@@ -1,1 +1,5 @@
+asyncio==3.4.3
+boto3==1.9
+click~=8.0.1
+discord==1.7.3
 python-dateutil~=2.8.2
