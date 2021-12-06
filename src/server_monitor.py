@@ -4,8 +4,9 @@ import json
 import logging
 import os
 import time
+from pathlib import Path
 
-from typing import Type
+from typing import Type, Union
 
 from src.constants import REQUEST_PATH, RESPONSE_PATH, CONFIRM_PATH
 from src.utils import get_now_str, Timer, json_from_file, json_to_file
@@ -40,9 +41,8 @@ class GameMonitor(ABC):
 
 class EC2ServerMonitor:
 
-    def __init__(self, game_monitor: GameMonitor, config_file: str):
-        with open(config_file) as f:
-            self.config = json.load(f)
+    def __init__(self, game_monitor: GameMonitor, config_file: Union[str, Path]):
+        self.config = json_from_file(config_file)
 
         self.logger = logging.getLogger("EC2Monitor")
         logging_level = logging.getLevelName(self.config["loggingLevel"])

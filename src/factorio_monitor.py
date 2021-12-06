@@ -6,6 +6,7 @@ import pathlib
 import sys
 import time
 from pathlib import Path
+from typing import Union
 
 sys.path.append(".")
 
@@ -14,19 +15,18 @@ from src.utils import tmux_sendkeys, json_from_file
 
 
 class FactorioMonitor(GameMonitor):
-    def __init__(self, config_file: str, debug_mode: bool = False):
+    def __init__(self, config_file: Union[str, Path], debug_mode: bool = False):
         super().__init__(debug_mode)
-        # TODO: don't pass save file in directly, pass in a config file
         self.config = json_from_file(config_file)
-        self.save_file = self.config['save_file']
         self.tmux_log = "../logs/tmux_factorio.log"
-        assert (pathlib.Path(self.save_file).exists())
         self.port = 34197
         self.tmux_session_name = "factorio"
-        self.logger = logging.getLogger("MinecraftMonitor")
+        self.logger = logging.getLogger("FactorioMonitor")
 
     def start_game_server(self):
-        start_server_cmd = f"/home/ubuntu/factorio/bin/x64/factorio --start-server {self.save_file}"
+        save_file = self.config['save_file']
+        factorio_exe = self.config['factorio_exe']
+        start_server_cmd = f"{factorio_exe} --start-server {save_file}"
         os.system(f'tmux new-session -s {self.tmux_session_name} -d')
         tmux_sendkeys(self.tmux_session_name, f"{start_server_cmd} 2>&1 | tee {self.tmux_log}")
 
@@ -36,10 +36,12 @@ class FactorioMonitor(GameMonitor):
         time.sleep(5.0)
         tmux_sendkeys(self.tmux_session_name, '/quit')
 
-    def parse_command(self, data: bytes):
-        # TODO: actually parse command. This is for testing.
-        print(data)
-        return data
+    def parse_command(self, command: str):
+        command_words = command.split()
+        if "echo" in command_words:
+            return command
+        else:
+            return 'Command not recognized.'
 
     @property
     def server_empty(self):

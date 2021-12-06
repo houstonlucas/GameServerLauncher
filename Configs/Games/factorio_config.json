@@ -1,3 +1,4 @@
 {
-  "save_file": "/home/ubuntu/factorio/saves/my-save.zip"
+  "save_file": "/home/ubuntu/factorio/saves/my-save.zip",
+  "factorio_exe": "/home/ubuntu/factorio/bin/x64/factorio"
 }
