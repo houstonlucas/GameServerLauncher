@@ -128,7 +128,8 @@ class DiscordBot(commands.Bot):
     async def on_message(self, message: discord.Message):
         if all([
             self.user.id in (member.id for member in message.mentions),
-            message.channel.name == self.discord_channel_name
+            message.channel.name == self.discord_channel_name,
+            message.author != self.user
         ]):
             print(message.content)
             message_words = message.content.split()
@@ -169,8 +170,11 @@ class DiscordBot(commands.Bot):
         else:
             await self.discord_channel.send('Error starting AWS Instance')
 
-        # TODO: Poll for instance start
-        time.sleep(15)
+        # TODO: update to python 3.8 and swap to use walrus
+        state = get_instance_state(instance)
+        while state != 'running':
+            time.sleep(self.config['polling_pause'])
+            state = get_instance_state(instance)
 
         # Pass the instance the startup message and display response in discord
         await self.handle_generic_message(instance_name, message)
@@ -207,6 +211,7 @@ def turn_on_instance(instance):
 
 
 def get_instance_state(instance):
+    instance.update()
     return instance.state['Name']
 
 
