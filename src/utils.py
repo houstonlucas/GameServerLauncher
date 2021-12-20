@@ -6,7 +6,7 @@ from dateutil import tz
 
 
 def create_tmux_session(session_name: str):
-    tmux_create_session_cmd = f'tmux new-session -d -s {session_name}"'
+    tmux_create_session_cmd = f'tmux new-session -d -s {session_name}'
     os.system(tmux_create_session_cmd)
 
 
