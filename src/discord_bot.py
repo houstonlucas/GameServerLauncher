@@ -1,13 +1,10 @@
 import logging
 import os
-import sys
-import json
 import time
 from typing import Dict, Union
 
 import discord
 from discord.ext import commands
-import asyncio
 import boto3
 import click
 
