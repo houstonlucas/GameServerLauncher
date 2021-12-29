@@ -1,7 +1,7 @@
 {
   "logger_name": "discord_bot",
   "discord_channel_name": "game-server-bot",
-  "instance_map_file": "../Configs/DiscordBot/instance_map.json",
+  "instance_map_file": "Configs/DiscordBot/instance_map.json",
   "response_timeout": 30,
   "polling_pause": 1
 }
