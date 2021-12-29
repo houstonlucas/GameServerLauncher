@@ -1,5 +1,6 @@
 import logging
 import os
+import sys
 import time
 from typing import Dict, Union
 
@@ -11,6 +12,7 @@ import click
 from src.constants import RESPONSE_PATH, REQUEST_PATH, CONFIRM_PATH
 from src.utils import Timer, json_to_file, json_from_file
 
+sys.path.append(".")
 
 @click.command()
 @click.argument('config_file', type=click.Path(exists=True))
