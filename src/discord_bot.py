@@ -214,7 +214,7 @@ def turn_on_instance(instance):
 
 
 def get_instance_state(instance):
-    instance.update()
+    instance.reload()
     return instance.state['Name']
 
 
