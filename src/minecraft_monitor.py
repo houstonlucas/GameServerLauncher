@@ -24,7 +24,15 @@ class MinecraftMonitor(GameMonitor):
 
     def parse_command(self, command: str):
         command_words = command.split()
-        if "echo" in command_words:
+        if "start" in command_words:
+            if self.server_running:
+                return "Server started successfully."
+            else:
+                return "Error: server did not start successfully."
+        elif "stop" in command_words:
+            self.shutdown_game_server()
+            return "Server has shutdown."
+        elif "echo" in command_words:
             return command
         else:
             return 'Command not recognized.'
