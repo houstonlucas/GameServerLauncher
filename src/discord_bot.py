@@ -80,6 +80,10 @@ class DiscordBot(commands.Bot):
         remote_response = f'{remote_base}:{RESPONSE_PATH}'
         remote_confirm = f'{remote_base}:{CONFIRM_PATH}'
 
+        # Clean up old responses
+        if os.path.exists(RESPONSE_PATH):
+            os.remove(RESPONSE_PATH)
+
         # Send the message over with scp
         json_request = {'message': message}
         json_to_file(json_request, REQUEST_PATH)
