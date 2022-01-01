@@ -97,6 +97,8 @@ class DiscordBot(commands.Bot):
         while not response_timer.expired:
             os.popen(f"scp -i {pem_file} {remote_response} {RESPONSE_PATH}")
             if os.path.exists(RESPONSE_PATH):
+                # Adding in small sleep to allow scp to finish TODO: find better solution
+                time.sleep(2.0)
                 # Response received
                 json_response = json_from_file(RESPONSE_PATH)
                 break
