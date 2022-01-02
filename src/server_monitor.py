@@ -67,7 +67,6 @@ class EC2ServerMonitor:
         self.monitor_game()
 
     def monitor_game(self):
-        self.start_game_server()
         # Monitor for shutdown conditions
         while not self.should_shutdown:
             self.check_for_crashed_server()
