@@ -1,4 +1,5 @@
 {
+  "log_file": "logs/minecraft_monitor.log",
   "server_dir": "/home/ubuntu/minecraft",
   "server_memory": 4096
 }

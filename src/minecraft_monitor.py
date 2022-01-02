@@ -21,6 +21,13 @@ class MinecraftMonitor(GameMonitor):
         self.port = 25565
         self.tmux_session_name = "minecraft"
         self.logger = logging.getLogger("MinecraftMonitor")
+        if self.debug_mode:
+            self.logger.setLevel(logging.DEBUG)
+        else:
+            self.logger.setLevel(logging.WARNING)
+        self.logger.addHandler(
+            logging.FileHandler(self.config['log_file'])
+        )
 
     def parse_command(self, command: str):
         command_words = command.split()
@@ -28,6 +35,7 @@ class MinecraftMonitor(GameMonitor):
             if self.server_running:
                 return "Server started successfully."
             else:
+                self.logger.error("Server failed to start")
                 return "Error: server did not start successfully."
         elif "stop" in command_words:
             self.shutdown_game_server()
@@ -35,9 +43,11 @@ class MinecraftMonitor(GameMonitor):
         elif "echo" in command_words:
             return command
         else:
+            self.logger.warning("Unrecognized command")
             return 'Command not recognized.'
 
     def start_game_server(self):
+        self.logger.debug("Starting game server")
         minecraft_path = self.config['server_dir']
         mem_size = self.config['server_memory']
         create_tmux_session(self.tmux_session_name)
@@ -46,6 +56,7 @@ class MinecraftMonitor(GameMonitor):
 
     def shutdown_game_server(self):
         # Issue commands to the tmux session
+        self.logger.debug("Shutting down game server")
         tmux_sendkeys(self.tmux_session_name, "stop")
 
     @property

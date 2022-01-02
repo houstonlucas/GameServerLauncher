@@ -47,6 +47,9 @@ class EC2ServerMonitor:
         self.logger = logging.getLogger("EC2Monitor")
         logging_level = logging.getLevelName(self.config["loggingLevel"])
         self.logger.setLevel(logging_level)
+        self.logger.addHandler(
+            logging.FileHandler(self.config['log_file'])
+        )
 
         self.should_shutdown = False
         self.empty_timer = Timer(self.config["max_empty_time"])
@@ -126,6 +129,7 @@ class EC2ServerMonitor:
                     self.should_shutdown = True
                     self.shutdown_ec2_instance("Game server seems to have crashed.")
         else:
+            self.logger.debug("Server is back up")
             self.down_timer.reset()
 
     def check_for_empty_server(self):
@@ -139,6 +143,7 @@ class EC2ServerMonitor:
                     self.should_shutdown = True
                     self.shutdown_ec2_instance("Game server is empty.")
         else:
+            self.logger.debug("Game server no longer empty.")
             self.empty_timer.reset()
 
     def check_for_incoming_message(self):
