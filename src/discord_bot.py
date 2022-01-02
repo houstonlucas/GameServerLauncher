@@ -94,6 +94,7 @@ class DiscordBot(commands.Bot):
         # Wait for response
         json_response = None
         response_timer = Timer(self.config['response_timeout'])
+        response_timer.start()
         while not response_timer.expired:
             os.popen(f"scp -i {pem_file} {remote_response} {RESPONSE_PATH}")
             if os.path.exists(RESPONSE_PATH):
