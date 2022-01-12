@@ -74,7 +74,7 @@ class MinecraftMonitor(GameMonitor):
 
 
 if __name__ == '__main__':
-    debug = True
+    debug = False
     minecraft_config = Path("Configs/Games/minecraft.json")
     minecraft_monitor = MinecraftMonitor(minecraft_config, debug)
     config_path = Path("Configs/EC2_Monitor_Config.json").absolute()
