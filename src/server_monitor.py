@@ -94,15 +94,15 @@ class EC2ServerMonitor:
 
         # Shutdown the EC2 Instance after one minute
         if self.game_monitor.debug_mode:
-            self.logger.debug("Server would shutdown here.")
+            self.logger.debug(f"Server would shutdown here. {get_now_str()}")
         else:
-            self.logger.debug("Server shutdown initiated.")
+            self.logger.debug(f"Server shutdown initiated. {get_now_str()}")
             logging.shutdown()
             os.system("shutdown -h 1")
 
     def start_game_server(self):
         # Start game server
-        self.logger.debug("Attempting to start game server.")
+        self.logger.debug(f"Attempting to start game server. {get_now_str()}")
         self.game_monitor.start_game_server()
 
         # Wait for game server to start
@@ -116,7 +116,7 @@ class EC2ServerMonitor:
             time.sleep(self.config["heartbeat"])
 
         self.down_timer.reset()
-        self.logger.debug("Game server started.")
+        self.logger.debug(f"Game server started. {get_now_str()}")
 
     def check_for_crashed_server(self):
         # If server isn't running
@@ -130,7 +130,7 @@ class EC2ServerMonitor:
                     self.should_shutdown = True
                     self.shutdown_ec2_instance("Game server seems to have crashed.")
         else:
-            self.logger.debug("Server is back up")
+            self.logger.debug(f"Server is back up. {get_now_str()}")
             self.down_timer.reset()
 
     def check_for_empty_server(self):
@@ -144,7 +144,7 @@ class EC2ServerMonitor:
                     self.should_shutdown = True
                     self.shutdown_ec2_instance("Game server is empty.")
         else:
-            self.logger.debug("Game server no longer empty.")
+            self.logger.debug(f"Game server no longer empty. {get_now_str()}")
             self.empty_timer.reset()
 
     def check_for_incoming_message(self):
