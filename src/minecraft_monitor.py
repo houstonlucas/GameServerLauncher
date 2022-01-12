@@ -25,6 +25,7 @@ class MinecraftMonitor(GameMonitor):
             self.logger.setLevel(logging.DEBUG)
         else:
             self.logger.setLevel(logging.WARNING)
+        self.logger.addHandler(logging.StreamHandler(sys.stdout))
         self.logger.addHandler(
             logging.FileHandler(self.config['log_file'])
         )
