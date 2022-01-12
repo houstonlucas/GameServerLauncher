@@ -103,7 +103,7 @@ class DiscordBot(commands.Bot):
                 # Response received
                 json_response = json_from_file(RESPONSE_PATH)
                 break
-            time.sleep(1)
+            time.sleep(5.0)
 
         # Send a confirmation that the response was received
         json_to_file({}, CONFIRM_PATH)

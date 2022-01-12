@@ -94,8 +94,10 @@ class EC2ServerMonitor:
 
         # Shutdown the EC2 Instance after one minute
         if self.game_monitor.debug_mode:
-            print("Server would shutdown here.")
+            self.logger.debug("Server would shutdown here.")
         else:
+            self.logger.debug("Server shutdown initiated.")
+            logging.shutdown()
             os.system("shutdown -h 1")
 
     def start_game_server(self):
