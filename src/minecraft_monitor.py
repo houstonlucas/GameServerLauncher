@@ -1,6 +1,7 @@
 import os
 import logging
 import pathlib
+import time
 
 import sys
 from pathlib import Path
@@ -59,6 +60,10 @@ class MinecraftMonitor(GameMonitor):
         # Issue commands to the tmux session
         self.logger.debug("Shutting down game server")
         tmux_sendkeys(self.tmux_session_name, "stop")
+        while self.server_running:
+            time.sleep(self.config["heartbeat"])
+        self.logger.debug("Server has shutdown.")
+        return True
 
     @property
     def server_empty(self):
