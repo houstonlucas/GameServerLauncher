@@ -6,7 +6,7 @@ import os
 import time
 from pathlib import Path
 
-from typing import Type, Union
+from typing import List, Union
 
 from src.constants import REQUEST_PATH, RESPONSE_PATH, CONFIRM_PATH
 from src.utils import get_now_str, Timer, json_from_file, json_to_file
@@ -16,9 +16,33 @@ class GameMonitor(ABC):
     def __init__(self, debug_mode):
         self.debug_mode = debug_mode
 
-    @abstractmethod
+    # TODO: Add in mocked base logger
     def parse_command(self, command: str):
-        raise NotImplementedError
+        command_words = command.split()
+        custom_command_parsed, custom_command_message = self.parse_custom_commands(command_words)
+
+        if custom_command_parsed:
+            return custom_command_message
+        elif "start" in command_words:
+            if self.server_running:
+                return "Server started successfully."
+            else:
+                return "Error: server did not start successfully."
+        elif "stop" in command_words:
+            self.shutdown_game_server()
+            return "Server has shutdown."
+        elif "echo" in command_words:
+            return command
+        else:
+            return 'Command not recognized.'
+
+    def parse_custom_commands(self, command_words: List[str]):
+        """Parse any custom commands besides the base commands.
+
+        Returns:
+            A tuple of whether there was a command that fit, and the response to return
+            """
+        return False, ""
 
     @abstractmethod
     def start_game_server(self):

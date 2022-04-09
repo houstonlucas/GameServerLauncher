@@ -36,21 +36,6 @@ class FactorioMonitor(GameMonitor):
         time.sleep(5.0)
         tmux_sendkeys(self.tmux_session_name, '/quit')
 
-    def parse_command(self, command: str):
-        command_words = command.split()
-        if "start" in command_words:
-            if self.server_running:
-                return "Server started successfully."
-            else:
-                return "Error: server did not start successfully."
-        elif "stop" in command_words:
-            self.shutdown_game_server()
-            return "Server has shutdown."
-        elif "echo" in command_words:
-            return command
-        else:
-            return 'Command not recognized.'
-
     @property
     def server_empty(self):
         # The number of lines back in the log to use to evaluate the number of players online
