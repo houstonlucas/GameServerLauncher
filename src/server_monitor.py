@@ -36,6 +36,14 @@ class GameMonitor(ABC):
         else:
             return 'Command not recognized.'
 
+    def parse_custom_commands(self, command_words: List[str]):
+        """Parse any custom commands besides the base commands.
+
+        Returns:
+            A tuple of whether there was a command that fit, and the response to return
+            """
+        return False, ""
+
     @abstractmethod
     def start_game_server(self):
         raise NotImplementedError
