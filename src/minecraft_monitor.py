@@ -63,7 +63,12 @@ class MinecraftMonitor(GameMonitor):
         while self.server_running:
             time.sleep(self.config["heartbeat"])
         self.logger.debug("Server has shutdown.")
-        return True
+
+    def restart_game_server(self):
+        self.logger.debug("Starting server restart sequence.")
+        self.shutdown_game_server()
+        self.logger.debug("Server successfully shutdown. Continuing with restarting server.")
+        self.start_game_server()
 
     @property
     def server_empty(self):
