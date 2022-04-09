@@ -64,6 +64,8 @@ class MinecraftMonitor(GameMonitor):
             time.sleep(self.config["heartbeat"])
         self.logger.debug("Server has shutdown.")
 
+    # TODO: This might be better as a method in the base class.
+    # You'd have to make sure the shutdown method waits until it's actually shutdown though.
     def restart_game_server(self):
         self.logger.debug("Starting server restart sequence.")
         self.shutdown_game_server()
