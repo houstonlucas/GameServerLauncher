@@ -42,6 +42,9 @@ class MinecraftMonitor(GameMonitor):
         elif "stop" in command_words:
             self.shutdown_game_server()
             return "Server has shutdown."
+        elif "restart" in command_words:
+            self.restart_game_server()
+            return "Server is restarting."
         elif "echo" in command_words:
             return command
         else:
