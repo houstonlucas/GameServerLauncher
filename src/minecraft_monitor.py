@@ -5,7 +5,7 @@ import time
 
 import sys
 from pathlib import Path
-from typing import Union
+from typing import List, Union
 
 sys.path.append(".")
 
@@ -31,25 +31,12 @@ class MinecraftMonitor(GameMonitor):
             logging.FileHandler(self.config['log_file'])
         )
 
-    def parse_command(self, command: str):
-        command_words = command.split()
-        if "start" in command_words:
-            if self.server_running:
-                return "Server started successfully."
-            else:
-                self.logger.error("Server failed to start")
-                return "Error: server did not start successfully."
-        elif "stop" in command_words:
-            self.shutdown_game_server()
-            return "Server has shutdown."
-        elif "restart" in command_words:
+    def parse_custom_commands(self, command_words: List[str]):
+        if "restart" in command_words:
             self.restart_game_server()
-            return "Server is restarting."
-        elif "echo" in command_words:
-            return command
+            return True, "Server is restarting."
         else:
-            self.logger.warning("Unrecognized command")
-            return 'Command not recognized.'
+            return False, ""
 
     def start_game_server(self):
         self.logger.debug("Starting game server")
