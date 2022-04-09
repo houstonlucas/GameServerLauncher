@@ -1,6 +1,7 @@
 import os
 import logging
 import pathlib
+import time
 
 import sys
 from pathlib import Path
@@ -41,6 +42,9 @@ class MinecraftMonitor(GameMonitor):
         elif "stop" in command_words:
             self.shutdown_game_server()
             return "Server has shutdown."
+        elif "restart" in command_words:
+            self.restart_game_server()
+            return "Server is restarting."
         elif "echo" in command_words:
             return command
         else:
@@ -59,6 +63,17 @@ class MinecraftMonitor(GameMonitor):
         # Issue commands to the tmux session
         self.logger.debug("Shutting down game server")
         tmux_sendkeys(self.tmux_session_name, "stop")
+        while self.server_running:
+            time.sleep(self.config["heartbeat"])
+        self.logger.debug("Server has shutdown.")
+
+    # TODO: This might be better as a method in the base class.
+    # You'd have to make sure the shutdown method waits until it's actually shutdown though.
+    def restart_game_server(self):
+        self.logger.debug("Starting server restart sequence.")
+        self.shutdown_game_server()
+        self.logger.debug("Server successfully shutdown. Continuing with restarting server.")
+        self.start_game_server()
 
     @property
     def server_empty(self):
