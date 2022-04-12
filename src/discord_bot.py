@@ -139,6 +139,7 @@ class DiscordBot(commands.Bot):
         ]):
             print(message.content)
             message_words = message.content.split()
+            message_words.lower()
             target_instance_name = self.get_instance_name_from_words(message_words)
             if not target_instance_name:
                 await self.discord_channel.send(
